@@ -1,0 +1,36 @@
+{
+  "name": "ai-eng-manager",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Personal AI Engineering Manager · Tech Lead · Codebase Archaeologist",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "lint": "pnpm --filter web lint",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:es": "node --env-file=.env scripts/provision-es.mjs",
+    "infra:kafka": "node --env-file=.env scripts/provision-kafka.mjs",
+    "db:push": "pnpm --filter @repo/db db:push",
+    "db:seed": "pnpm --filter @repo/db seed",
+    "auth:migrate": "pnpm --filter web auth:migrate",
+    "test": "pnpm --filter web test",
+    "check:auth": "tsx scripts/check-auth-coverage.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "ioredis": "^5.11.1"
+    }
+  }
+}

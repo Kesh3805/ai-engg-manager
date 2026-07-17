@@ -1,0 +1,19 @@
+node_modules/
+.next/
+dist/
+.turbo/
+out/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+coverage/
+.pnpm-store/
+
+# Certificates
+ca.pem
+service.cert
+service.key
+*.pem
+*.cert
+*.key
