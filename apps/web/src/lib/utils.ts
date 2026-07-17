@@ -5,6 +5,22 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Fetch JSON, falling back when the request fails or returns a non-2xx.
+ * Our API errors carry a JSON body, so a bare `res.json()` resolves with the
+ * error object and slips past `.catch` — callers then destructure fields that
+ * aren't there. Checking `res.ok` first is what keeps the fallback honest.
+ */
+export async function fetchJson<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return fallback;
+    return (await res.json()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export function relativeTime(date: Date | string | number): string {
   const d = new Date(date).getTime();
   const diff = Date.now() - d;

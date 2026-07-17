@@ -26,3 +26,11 @@ export const GLASS_HOVER = {
   whileHover: { scale: 1.02, transition: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] } },
   whileTap:   { scale: 0.98 },
 };
+
+export const GLOW_PULSE = {
+  animate: { opacity: [0.5, 1, 0.5], transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } },
+};
+
+export const ORB_BREATHE = {
+  animate: { scale: [1, 1.06, 1], transition: { duration: 3, repeat: Infinity, ease: 'easeInOut' } },
+};

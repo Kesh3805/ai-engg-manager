@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Gauge, GitPullRequest, Loader2, Network, MessagesSquare, History, X } from 'lucide-react';
-import { GlassPanel } from '@/components/ui/glass-panel';
+import { FloatingPanel } from '@/components/floating-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { use3dEnabled, type GalaxyNode, type GalaxyEdge } from '@/components/3d/galaxy-scene';
-import { relativeTime } from '@/lib/utils';
+import { fetchJson, relativeTime } from '@/lib/utils';
 import { playSound } from '@/lib/sound';
 
 const GalaxyScene = dynamic(() => import('@/components/3d/galaxy-scene').then((m) => m.GalaxyScene), {
@@ -33,24 +33,33 @@ interface RepoRow {
   nodes: number | null;
 }
 
+interface DashboardPayload {
+  activity?: Array<{ id: string; actor: string; text: string; at: string }>;
+  riskyPRs?: Array<{ id: string; number: number; title: string; risk: string; blastRadius: number; url: string }>;
+}
+
+interface ScorecardPayload {
+  latest?: Array<Record<string, number | string | null>>;
+}
+
 /** Command Center (plan §9) — the signature full-3D view. */
 export default function CommandCenterPage() {
   const router = useRouter();
   const enabled3d = use3dEnabled();
+  const panelBoundsRef = useRef<HTMLDivElement>(null);
   const [twin, setTwin] = useState<TwinPayload | null>(null);
   const [repos, setRepos] = useState<RepoRow[]>([]);
-  const [dashboard, setDashboard] = useState<{ activity?: Array<{ id: string; actor: string; text: string; at: string }>; riskyPRs?: Array<{ id: string; number: number; title: string; risk: string; blastRadius: number; url: string }> } | null>(null);
-  const [scorecard, setScorecard] = useState<{ latest?: Array<Record<string, number | string | null>> } | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
+  const [scorecard, setScorecard] = useState<ScorecardPayload | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/twin').then((r) => r.json()).then(setTwin).catch(() => setTwin({ nodes: [], edges: [] }));
-    fetch('/api/v1/repos')
-      .then((r) => r.json())
-      .then((d) => setRepos((d.repos ?? []).filter((r: RepoRow) => !String(r.id).startsWith('gh:'))))
-      .catch(() => {});
-    fetch('/api/v1/dashboard').then((r) => r.json()).then(setDashboard).catch(() => {});
-    fetch('/api/v1/scorecard').then((r) => r.json()).then(setScorecard).catch(() => {});
+    fetchJson<TwinPayload>('/api/v1/twin', { nodes: [], edges: [] }).then(setTwin);
+    fetchJson<{ repos?: RepoRow[] }>('/api/v1/repos', {}).then((d) =>
+      setRepos((d.repos ?? []).filter((r) => !String(r.id).startsWith('gh:'))),
+    );
+    fetchJson<DashboardPayload>('/api/v1/dashboard', {}).then(setDashboard);
+    fetchJson<ScorecardPayload>('/api/v1/scorecard', {}).then(setScorecard);
   }, []);
 
   const { nodes, edges } = useMemo((): { nodes: GalaxyNode[]; edges: GalaxyEdge[] } => {
@@ -93,14 +102,9 @@ export default function CommandCenterPage() {
         )}
       </div>
 
-      {/* Floating data panels (plan §9.4) — draggable glass */}
-      <div className="pointer-events-none absolute inset-0 z-20">
-        <GlassPanel
-          drag
-          dragMomentum={false}
-          noHover
-          className="pointer-events-auto absolute right-6 top-20 w-72 cursor-grab p-3 active:cursor-grabbing"
-        >
+      {/* Floating data panels (plan §9.4) — draggable glass, position persisted */}
+      <div ref={panelBoundsRef} className="pointer-events-none absolute inset-0 z-20">
+        <FloatingPanel id="cc-live-activity" constraintsRef={panelBoundsRef} className="right-6 top-20 w-72">
           <PanelTitle icon={<Activity className="h-3.5 w-3.5 text-arc-400" />} label="Live Activity" />
           <div className="mt-2 space-y-2">
             {(dashboard?.activity ?? []).slice(0, 5).map((e) => (
@@ -113,14 +117,9 @@ export default function CommandCenterPage() {
             ))}
             {(dashboard?.activity ?? []).length === 0 && <Empty label="No activity yet" />}
           </div>
-        </GlassPanel>
+        </FloatingPanel>
 
-        <GlassPanel
-          drag
-          dragMomentum={false}
-          noHover
-          className="pointer-events-auto absolute left-24 top-20 w-60 cursor-grab p-3 active:cursor-grabbing"
-        >
+        <FloatingPanel id="cc-eng-scores" constraintsRef={panelBoundsRef} className="left-24 top-20 w-60">
           <PanelTitle icon={<Gauge className="h-3.5 w-3.5 text-arc-400" />} label="Engineering Scores" />
           {score ? (
             <div className="mt-2 grid grid-cols-3 gap-1.5">
@@ -146,14 +145,9 @@ export default function CommandCenterPage() {
           ) : (
             <Empty label="No scores yet" />
           )}
-        </GlassPanel>
+        </FloatingPanel>
 
-        <GlassPanel
-          drag
-          dragMomentum={false}
-          noHover
-          className="pointer-events-auto absolute bottom-24 right-6 w-80 cursor-grab p-3 active:cursor-grabbing"
-        >
+        <FloatingPanel id="cc-pr-risk" constraintsRef={panelBoundsRef} className="bottom-24 right-6 w-80">
           <PanelTitle icon={<GitPullRequest className="h-3.5 w-3.5 text-arc-400" />} label="PR Risk Radar" />
           <div className="mt-2 space-y-2">
             {(dashboard?.riskyPRs ?? []).slice(0, 3).map((pr) => (
@@ -165,7 +159,7 @@ export default function CommandCenterPage() {
             ))}
             {(dashboard?.riskyPRs ?? []).length === 0 && <Empty label="No open PR risk" />}
           </div>
-        </GlassPanel>
+        </FloatingPanel>
       </div>
 
       {/* Selected node detail (plan §9.5) */}

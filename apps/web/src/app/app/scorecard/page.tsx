@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Loader2, Gauge, Zap, Network, Sparkles } from 'lucide-react';
 import { STAGGER_CONTAINER, STAGGER_ITEM } from '@/lib/motion';
+import { fetchJson } from '@/lib/utils';
 import { ScoreGauge } from '@/components/scorecard/score-gauge';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Badge } from '@/components/ui/badge';
@@ -128,8 +129,8 @@ export default function ScorecardPage() {
   const [repoId, setRepoId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/scorecard').then((r) => r.json()).then(setData).catch(() => setData({ algorithmVersion: 1, disclaimer: '', latest: [], history: [] }));
-    fetch('/api/v1/hotspots').then((r) => r.json()).then((d) => setHotspots(d.hotspots ?? [])).catch(() => {});
+    fetchJson<ScorecardData>('/api/v1/scorecard', { algorithmVersion: 1, disclaimer: '', latest: [], history: [] }).then(setData);
+    fetchJson<{ hotspots?: Array<{ filePath: string }> }>('/api/v1/hotspots', {}).then((d) => setHotspots(d.hotspots ?? []));
   }, []);
 
   const repos = useMemo(() => (data?.latest ?? []).filter((r) => r.repoId), [data]);

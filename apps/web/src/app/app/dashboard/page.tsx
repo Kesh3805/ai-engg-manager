@@ -9,7 +9,7 @@ import { STAGGER_CONTAINER, STAGGER_ITEM } from '@/lib/motion';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { relativeTime } from '@/lib/utils';
+import { fetchJson, relativeTime } from '@/lib/utils';
 
 const RISK_TONE = { high: 'red', medium: 'amber', low: 'green' } as const;
 const SEVERITY_TONE = { critical: 'red', high: 'red', medium: 'amber', low: 'green' } as const;
@@ -84,12 +84,10 @@ export default function DashboardPage() {
   const [incidents, setIncidents] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/v1/dashboard')
-      .then((r) => r.json())
-      .then(setData);
-    fetch('/api/v1/hotspots').then((r) => r.json()).then((d) => setHotspots(d.hotspots ?? [])).catch(() => {});
-    fetch('/api/v1/scorecard').then((r) => r.json()).then(setScorecard).catch(() => {});
-    fetch('/api/v1/incidents').then((r) => r.json()).then((d) => setIncidents((d.incidents ?? []).slice(0, 5))).catch(() => {});
+    fetchJson<any>('/api/v1/dashboard', {}).then(setData);
+    fetchJson<any>('/api/v1/hotspots', {}).then((d) => setHotspots(d.hotspots ?? []));
+    fetchJson<any>('/api/v1/scorecard', {}).then(setScorecard);
+    fetchJson<any>('/api/v1/incidents', {}).then((d) => setIncidents((d.incidents ?? []).slice(0, 5)));
   }, []);
 
   if (!data) {

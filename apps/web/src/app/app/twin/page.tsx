@@ -7,6 +7,7 @@ import { Loader2, Boxes, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { use3dEnabled, type GalaxyNode, type GalaxyEdge } from '@/components/3d/galaxy-scene';
 import { playSound } from '@/lib/sound';
+import { fetchJson } from '@/lib/utils';
 
 const GalaxyScene = dynamic(() => import('@/components/3d/galaxy-scene').then((m) => m.GalaxyScene), {
   ssr: false,
@@ -45,10 +46,7 @@ export default function TwinPage() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    fetch('/api/v1/twin')
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData({ nodes: [], edges: [], cap: 500 }));
+    fetchJson<TwinPayload>('/api/v1/twin', { nodes: [], edges: [], cap: 500 }).then(setData);
   }, []);
 
   const nodes: GalaxyNode[] = useMemo(
